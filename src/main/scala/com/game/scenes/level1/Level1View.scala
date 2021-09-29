@@ -1,0 +1,138 @@
+package com.game.scenes.level1
+
+import com.game.init.{StaticAssets, ViewConfig}
+import com.game.model.GameModel
+import com.game.model.player.Direction
+
+import indigo.*
+import indigo.IndigoLogger.*
+import indigo.shared.*
+import indigoextras.geometry.{BoundingBox,Vertex}
+
+object Level1View {
+  def update(viewConfig: ViewConfig, model: Level1Model, viewModel: Level1ViewModel, staticAssets: StaticAssets): Outcome[SceneUpdateFragment] = {
+    Outcome(
+      SceneUpdateFragment
+        .empty
+        .addLayer(
+          Layer(
+            BindingKey("ui"),
+            uiLayer(viewConfig, model)
+          )
+        )
+        .addLayer(
+          Layer(
+            BindingKey("game"),
+            gameLayer(viewConfig, model, staticAssets)
+          //).withCamera(Camera.LookAt(model.player.location.toPoint))
+          ).withCamera(Camera.Fixed(model.cameraBoundingBox.topLeft.toPoint))
+        )
+    )
+  }
+
+  def gameLayer(config: ViewConfig, model: Level1Model, staticAssets: StaticAssets): List[SceneNode] = {
+    drawCharacter(config, model, staticAssets.character) ::
+      drawEnemies(config, model, staticAssets.enemy1) :::
+      drawBullets(config, model, staticAssets.bullet) :::
+      drawEnemyBullets(config, model, staticAssets.bullet)
+      ::: _drawBoundingBoxes(config, model)
+  }
+
+  def drawCharacter(config: ViewConfig, model: Level1Model, characterAsset: Graphic[Material.ImageEffects]): Graphic[_] = {
+    // val radians = getAngleDifference(model.player.direction)
+    // characterAsset.rotateBy(radians).moveTo(model.player.location.toPoint)
+
+    characterAsset
+      .moveTo(model.player.location.toPoint)
+      .modifyMaterial(material => {
+        if (model.player.status.isInvincibleFor > Seconds(0)) then material.withAlpha(0.5) else material
+      })
+  }
+
+  def drawBullets(config: ViewConfig, model: Level1Model, bulletAsset: Graphic[_]): List[Graphic[_]] = {
+    model.player.projectiles map { projectile => bulletAsset.moveTo(projectile.location.toPoint) }
+  }
+
+  def drawEnemies(config: ViewConfig, model: Level1Model, enemyAsset: Graphic[_]): List[Graphic[_]] = {
+    //model.enemies.map {enemy => enemyAsset.moveTo(enemy.location.toPoint)}
+    model.enemies.map {enemy => {
+      val angle = getAngleDifference(enemy.direction, Vertex(0, 1f))
+      consoleLog(s"angle delta ${angle}")
+      enemyAsset.moveTo(enemy.location.toPoint).rotateBy(angle)}
+    }
+  }
+
+  def drawEnemyBullets(config: ViewConfig, model: Level1Model, bulletAsset: Graphic[_]): List[Graphic[_]] = {
+    model.enemyProjectiles map { projectile => bulletAsset.moveTo(projectile.location.toPoint) }
+  }
+
+  def getAngleDifference(newDirection: Direction): Radians = {
+    newDirection match
+      case Direction.UP => Radians(0)
+      case Direction.DOWN => Radians.PI
+      case Direction.LEFT => Radians.fromDegrees(-90)
+      case Direction.RIGHT => Radians.fromDegrees(90)
+  }
+
+  def getAngleDifference(v1: Vertex, v2: Vertex): Radians = {
+    // α = arccos[(a · b) / (|a| * |b|)]
+    val angle = Math.acos(v1.dot(v2) / (v1.length * v2.length))
+    Radians(angle)
+  }
+
+  def uiLayer(config: ViewConfig, model: Level1Model): List[SceneNode] = {
+    drawHealthBar(config, model)
+  }
+
+  def drawHealthBar(config: ViewConfig, model: Level1Model): List[SceneNode] = {
+    val currentHealth = model.player.status.health
+    val totalHealth = model.player.status.totalHealth
+    val healthBar = (0 until totalHealth).map { index => drawHealthBox(index, currentHealth) }
+    healthBar.toList
+  }
+
+  def drawHealthBox(index: Int, currentHealth: Int): SceneNode = {
+    val fillColor = if (currentHealth >= index + 1) then RGBA.White else RGBA.Zero
+    val offset = 15
+    Shape.Box(
+      Rectangle(Point(17 * index + offset, offset), Size(10, 20)),
+      Fill.Color(fillColor),
+      Stroke(2, RGBA.White)
+    )
+  }
+
+  private def _drawBoundingBoxes(config: ViewConfig, model: Level1Model): List[SceneNode] = {
+    val enemyBoxes = model.enemies.flatMap(enemy => {
+      _drawBoundingBox(enemy.getHitBoundingBox(), RGBA.Green)
+    })
+
+    _drawBoundingBox(model.player.getHitBoundingBox(), RGBA.Red) :::
+      _drawBoundingBox(model.cameraBoundingBox, RGBA.Blue)
+      ::: enemyBoxes
+  }
+
+  private def _drawBoundingBox(box: BoundingBox, color: RGBA): List[Shape.Line] = {
+    List(
+      Shape.Line(
+        box.topLeft.toPoint,
+        box.topRight.toPoint,
+        Stroke(2, color)
+      ),
+      Shape.Line(
+        box.topRight.toPoint,
+        box.bottomRight.toPoint,
+        Stroke(2, color)
+      ),
+      Shape.Line(
+        box.bottomRight.toPoint,
+        box.bottomLeft.toPoint,
+        Stroke(2, color)
+      ),
+      Shape.Line(
+        box.bottomLeft.toPoint,
+        box.topLeft.toPoint,
+        Stroke(2, color)
+      ),
+    )
+  }
+}
