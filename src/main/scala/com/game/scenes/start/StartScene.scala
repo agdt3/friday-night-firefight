@@ -2,7 +2,6 @@ package com.game.scenes.start
 
 import indigo.*
 import indigo.scenes.*
-
 import com.game.init.StartupData
 import com.game.model.{Model, ViewModel}
 import com.game.scenes.level1.Level1Scene

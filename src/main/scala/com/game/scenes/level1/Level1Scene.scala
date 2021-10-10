@@ -2,11 +2,11 @@ package com.game.scenes.level1
 
 import indigo.*
 import indigo.scenes.*
-import indigo.shared.IndigoLogger.consoleLog
 
 import com.game.init.StartupData
 import com.game.model.{Model, ViewModel}
 import com.game.scenes.level1.Level1View
+import com.game.events.ViewModelEvent
 
 object Level1Scene extends Scene[StartupData, Model, ViewModel] {
   type SceneModel     = Level1Model
@@ -39,7 +39,14 @@ object Level1Scene extends Scene[StartupData, Model, ViewModel] {
     )
 
   val eventFilters: EventFilters =
-    EventFilters.Restricted
+    EventFilters.Permissive.withViewModelFilter(event => {
+        event match
+          case event : ViewModelEvent => Some(event)
+          case event : ViewEvent => Some(event)
+          case event : FrameTick => Some(event)
+          case _ => None
+      }
+    )
 
   val subSystems: Set[SubSystem] =
     Set()

@@ -3,12 +3,13 @@ package com.game.scenes.level1
 import indigo.*
 import indigo.scenes.SceneEvent
 import indigoextras.geometry.{BoundingBox, Vertex}
-import indigo.shared.IndigoLogger.consoleLog
-import com.game.model.{GameControlScheme, GameModel, GameState}
+
+import com.game.model.{GameControlScheme, GameState}
 import com.game.model.enemy.EnemyModel
 import com.game.model.other.Projectile
 import com.game.model.player.PlayerModel
 import com.game.scenes.gameover.GameOverScene
+import com.game.events.EnemyDeathEvent
 
 final case class Level1Model(
                               controlScheme: GameControlScheme,
@@ -20,7 +21,7 @@ final case class Level1Model(
                               lastUpdated: Seconds = Seconds.zero,
                             ) {
   def update(gameTime: GameTime): GlobalEvent => Outcome[Level1Model] = {
-    // FrameTick is always the last event, which is why we update the GameModel's lastUpdated
+    // FrameTick is always the last event, which is why we update the model's lastUpdated
     case FrameTick => {
       Level1Model.update(
         gameTime,
@@ -51,8 +52,8 @@ object Level1Model {
   def update(gameTime: GameTime, state: Level1Model): GlobalEvent => Outcome[Level1Model] = {
     case FrameTick => {
       val updatedProjectiles = updateProjectilePostions(state.enemyProjectiles, state.cameraBoundingBox)
-      val (updatedEnemies, newProjectiles) = updateEnemies(state.enemies, state.player, state.player.projectiles, gameTime)
-      val (newPlayer, globalEvents) = state.player.update(state.cameraBoundingBox, state.gameMap, gameTime)
+      val (updatedEnemies, newProjectiles, enemyEvents) = updateEnemies(state.enemies, state.player, state.player.projectiles, gameTime)
+      val (newPlayer, playerEvents) = state.player.update(state.cameraBoundingBox, state.gameMap, gameTime)
 
       val updatedAndNewEnemyProjectiles = newProjectiles ::: updatedProjectiles
       val (isPlayerHit, damage) = checkPlayerHit(player = newPlayer, projectiles = updatedAndNewEnemyProjectiles)
@@ -61,11 +62,15 @@ object Level1Model {
       Outcome(
         state.copy(
           player = updatedPlayer,
-          enemies = updatedEnemies.filter(_.isAlive()),
+          enemies = updatedEnemies,
           enemyProjectiles = updatedAndNewEnemyProjectiles
         )
       ).createGlobalEvents(
-        newState => if newState.player.status.isAlive() then globalEvents else SceneEvent.JumpTo(GameOverScene.name) :: Nil
+        newState => if newState.player.status.isAlive()
+        then
+          playerEvents ::: enemyEvents
+        else
+          SceneEvent.JumpTo(GameOverScene.name) :: Nil
       )
     }
 
@@ -94,16 +99,16 @@ object Level1Model {
                      player: PlayerModel,
                      playerProjectiles: List[Projectile],
                      gameTime: GameTime
-                   ): (List[EnemyModel], List[Projectile]) = {
-    // Can do this in one loop if use separate function signatures for damage
-    val (newEnemies, newProjectiles) = enemies
-      .map(enemy => {
-        val (isHit, damage) = checkEnemyHit(enemy, playerProjectiles)
-        if isHit then enemy.takeDamage(damage) else enemy
-      })
-      .map(_.update(gameTime, player.location))
-      .unzip
-    (newEnemies.filter(_.isAlive()), newProjectiles.flatten)
+                   ): (List[EnemyModel], List[Projectile], List[GlobalEvent]) = {
+    val (livingEnemies, deadEnemies) = enemies.map(enemy => {
+      val (isHit, damage) = checkEnemyHit(enemy, playerProjectiles)
+      if isHit then enemy.takeDamage(damage) else enemy
+    }).partition(_.isAlive())
+
+    val (updatedEnemies, newProjectiles) = livingEnemies.map(_.update(gameTime, player.location)).unzip
+    val deadEnemyEvents = deadEnemies.map(enemy => EnemyDeathEvent(enemy.location.toPoint))
+
+    (updatedEnemies, newProjectiles.flatten, deadEnemyEvents)
   }
 
   def checkPlayerHit(player: PlayerModel, projectiles: List[Projectile]): (Boolean, Int) = {

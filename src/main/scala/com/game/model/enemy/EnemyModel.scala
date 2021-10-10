@@ -4,7 +4,6 @@ import com.game.model.enemy.EnemyModel.rotateVertex
 import com.game.model.other.Projectile
 import indigo.*
 import indigoextras.geometry.{BoundingBox, Vertex}
-import indigo.shared.IndigoLogger.consoleLog
 
 final case class EnemyModel(
                               location: Vertex,
@@ -38,11 +37,11 @@ final case class EnemyModel(
 
     val newLastUpdated = lastUpdated + gameTime.delta
     if (newLastUpdated >= Seconds(0.1)) {
-      //val angle = Math.atan2(location.y - playerPostion.y, location.x - playerPostion.x)
-      //val rotate = if (angle > 0) followAngle else followAngle * -1
-      //val newVertex = rotateVertex(direction, rotate)
-      val newVertex = rotateVertex(direction, followAngle)
-      (Seconds(0), direction.moveTo(newVertex))
+      // val angle = Math.atan2(location.y - playerPostion.y, location.x - playerPostion.x)
+      // val rotate = if (angle > 0) followAngle else followAngle * -1
+      // val newVertex = rotateVertex(direction, rotate)
+      // val newVertex = rotateVertex(direction, followAngle)
+      (Seconds(0), direction)
     } else {
       (newLastUpdated, direction)
     }
@@ -70,7 +69,6 @@ object EnemyModel {
   }
 
   def rotateVertex(vertex: Vertex, angle: Radians): Vertex = {
-    consoleLog(s"vert ${vertex}")
     val s = Math.sin(angle.toDouble)
     val c = Math.cos(angle.toDouble)
 

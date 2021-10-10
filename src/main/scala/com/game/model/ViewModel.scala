@@ -1,7 +1,6 @@
 package com.game.model
 
 import com.game.init.StartupData
-import com.game.model.GameModel
 import com.game.model.player.PlayerViewModel
 import com.game.scenes.level1.Level1ViewModel
 

@@ -1,16 +1,21 @@
 package com.game.scenes.level1
 
 import com.game.init.{StaticAssets, ViewConfig}
-import com.game.model.GameModel
 import com.game.model.player.Direction
+import com.game.scenes.level1.Level1View.gameLayer
 
 import indigo.*
-import indigo.IndigoLogger.*
 import indigo.shared.*
-import indigoextras.geometry.{BoundingBox,Vertex}
+import indigo.shared.IndigoLogger.consoleLog
+import indigoextras.geometry.{BoundingBox, Vertex}
 
 object Level1View {
-  def update(viewConfig: ViewConfig, model: Level1Model, viewModel: Level1ViewModel, staticAssets: StaticAssets): Outcome[SceneUpdateFragment] = {
+  def update(
+              viewConfig: ViewConfig,
+              model: Level1Model,
+              viewModel: Level1ViewModel,
+              staticAssets: StaticAssets
+            ): Outcome[SceneUpdateFragment] = {
     Outcome(
       SceneUpdateFragment
         .empty
@@ -23,19 +28,21 @@ object Level1View {
         .addLayer(
           Layer(
             BindingKey("game"),
-            gameLayer(viewConfig, model, staticAssets)
+            gameLayer(viewConfig, model, viewModel, staticAssets)
+          )
           //).withCamera(Camera.LookAt(model.player.location.toPoint))
-          ).withCamera(Camera.Fixed(model.cameraBoundingBox.topLeft.toPoint))
+          //).withCamera(Camera.Fixed(model.cameraBoundingBox.topLeft.toPoint))
         )
     )
   }
 
-  def gameLayer(config: ViewConfig, model: Level1Model, staticAssets: StaticAssets): List[SceneNode] = {
+  def gameLayer(config: ViewConfig, model: Level1Model, viewModel: Level1ViewModel, staticAssets: StaticAssets): List[SceneNode] = {
     drawCharacter(config, model, staticAssets.character) ::
       drawEnemies(config, model, staticAssets.enemy1) :::
       drawBullets(config, model, staticAssets.bullet) :::
       drawEnemyBullets(config, model, staticAssets.bullet)
-      ::: _drawBoundingBoxes(config, model)
+      ::: drawExplosions(config, viewModel, staticAssets.explosionMaterial)
+      // ::: _drawBoundingBoxes(config, model)
   }
 
   def drawCharacter(config: ViewConfig, model: Level1Model, characterAsset: Graphic[Material.ImageEffects]): Graphic[_] = {
@@ -55,15 +62,29 @@ object Level1View {
 
   def drawEnemies(config: ViewConfig, model: Level1Model, enemyAsset: Graphic[_]): List[Graphic[_]] = {
     //model.enemies.map {enemy => enemyAsset.moveTo(enemy.location.toPoint)}
-    model.enemies.map {enemy => {
-      val angle = getAngleDifference(enemy.direction, Vertex(0, 1f))
-      consoleLog(s"angle delta ${angle}")
-      enemyAsset.moveTo(enemy.location.toPoint).rotateBy(angle)}
-    }
+    model.enemies.map(enemy => {
+      // val angle = getAngleDifference(enemy.direction, Vertex(0, 1f))
+      // enemyAsset.moveTo(enemy.location.toPoint).rotateBy(angle)}
+      enemyAsset.moveTo(enemy.location.toPoint)
+    })
   }
 
   def drawEnemyBullets(config: ViewConfig, model: Level1Model, bulletAsset: Graphic[_]): List[Graphic[_]] = {
     model.enemyProjectiles map { projectile => bulletAsset.moveTo(projectile.location.toPoint) }
+  }
+
+  def drawExplosions(config: ViewConfig, viewModel: Level1ViewModel, explosionMaterial: Material): List[Sprite[_]] = {
+    viewModel.explosions map { explosion =>
+      val offset = explosion.location - Point(32, 32)
+      Sprite(
+        BindingKey("explosion animation"),
+        offset.x,
+        offset.y,
+        1,
+        explosion.animationKey,
+        explosionMaterial
+      ).play()
+    }
   }
 
   def getAngleDifference(newDirection: Direction): Radians = {
