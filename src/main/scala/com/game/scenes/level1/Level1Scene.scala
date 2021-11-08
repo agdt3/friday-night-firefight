@@ -55,7 +55,7 @@ object Level1Scene extends Scene[StartupData, Model, ViewModel] {
                    context: FrameContext[StartupData],
                    levelModel: Level1Model
                  ): GlobalEvent => Outcome[Level1Model] = {
-    levelModel.update(context.gameTime)
+    levelModel.update(context.gameTime, context.inputState)
   }
 
   def updateViewModel(

@@ -5,7 +5,7 @@ import indigo.IndigoLogger._
 import com.game.model.player.{Direction, PlayerModel}
 
 trait GameControlScheme {
-  def controlPlayer(keyboardEvent: KeyboardEvent, gameTime: GameTime, player: PlayerModel): PlayerModel
+  val inputMapping: InputMapping[PlayerControlState]
 
   def swap: GameControlScheme = {
     this match {
@@ -19,59 +19,80 @@ object GameControlScheme {
   val keysWASD: SchemeA = SchemeA(Key.KEY_W, Key.KEY_S, Key.KEY_A, Key.KEY_D, Key.SPACE)
   val keysArrow: SchemeB = SchemeB(Key.UP_ARROW, Key.DOWN_ARROW, Key.LEFT_ARROW, Key.RIGHT_ARROW, Key.SPACE)
 
-  final case class SchemeA(up: Key, down: Key, left: Key, right: Key, action: Key) extends GameControlScheme {
-    def mapInput(inputState: InputState): InputMapping[Vector2] = {
-      InputMapping()
-    }
+  def generateInputMapping(up: Key, down: Key, left: Key, right: Key, action: Key): InputMapping[PlayerControlState] = {
+    InputMapping(
+      // Triples
+      Combo.withKeyInputs(up, left, action) -> PlayerControlState(Vector2(-1.0, -1.0), true),
+      Combo.withKeyInputs(up, right, action) -> PlayerControlState(Vector2(1.0, 1.0), true),
 
-    override def controlPlayer(keyboardEvent: KeyboardEvent, gameTime: GameTime, player: PlayerModel): PlayerModel = {
-      keyboardEvent match {
-        case KeyboardEvent.KeyDown(Key.KEY_W) => {
-          player.turn(Direction.UP).move(true)
-        }
-        case KeyboardEvent.KeyDown(Key.KEY_S) => {
-          player.turn(Direction.DOWN).move(true)
-        }
-        case KeyboardEvent.KeyDown(Key.KEY_A) => {
-          player.turn(Direction.LEFT).move(true)
-        }
-        case KeyboardEvent.KeyDown(Key.KEY_D) => {
-          player.turn(Direction.RIGHT).move(true)
-        }
-        case KeyboardEvent.KeyDown(Key.SPACE) => player.fire(true);
-        case KeyboardEvent.KeyUp(Key.SPACE) => player.fire(false);
-        case KeyboardEvent.KeyUp(_) => player.move(false)
-        case _ => player
-      }
-    }
+      Combo.withKeyInputs(down, left, action) -> PlayerControlState(Vector2(-1.0, 1.0), true),
+      Combo.withKeyInputs(down, right, action) -> PlayerControlState(Vector2(1.0, 1.0), true),
+
+      // Doubles
+      Combo.withKeyInputs(up, left) -> PlayerControlState(Vector2(-1.0, -1.0)),
+      Combo.withKeyInputs(up, right) -> PlayerControlState(Vector2(1.0, -1.0)),
+
+      Combo.withKeyInputs(down, left) -> PlayerControlState(Vector2(-1.0, 1.0)),
+      Combo.withKeyInputs(down, right) -> PlayerControlState(Vector2(1.0, 1.0)),
+
+      Combo.withKeyInputs(up, down) -> PlayerControlState(Vector2(0, 0)),
+      Combo.withKeyInputs(left, right) -> PlayerControlState(Vector2(0, 0)),
+
+      Combo.withKeyInputs(up, action) -> PlayerControlState(Vector2(0, -1.0), true),
+      Combo.withKeyInputs(down, action) -> PlayerControlState(Vector2(0, 1.0), true),
+      Combo.withKeyInputs(left, action) -> PlayerControlState(Vector2(-1.0, 0), true),
+      Combo.withKeyInputs(right, action) -> PlayerControlState(Vector2(1.0, 0), true),
+
+      // Singles
+      Combo.withKeyInputs(up) -> PlayerControlState(Vector2(0, -1.0)),
+      Combo.withKeyInputs(down) -> PlayerControlState(Vector2(0, 1.0)),
+      Combo.withKeyInputs(left) -> PlayerControlState(Vector2(-1.0, 0)),
+      Combo.withKeyInputs(right) -> PlayerControlState(Vector2(1.0, 0)),
+      Combo.withKeyInputs(action) -> PlayerControlState(firing = true),
+    )
+  }
+
+  final case class SchemeA(up: Key, down: Key, left: Key, right: Key, action: Key) extends GameControlScheme {
+    override val inputMapping: InputMapping[PlayerControlState] = generateInputMapping(up, down, left, right, action)
   }
 
   final case class SchemeB(up: Key, down: Key, left: Key, right: Key, action: Key) extends GameControlScheme {
-    def mapInput(inputState: InputState, player: PlayerModel, gameTime: GameTime): InputMapping[PlayerModel] = {
+    override val inputMapping: InputMapping[PlayerControlState] = generateInputMapping(up, down, left, right, action)
+    /*
+    override val inputMapping: InputMapping[PlayerControlState] = {
       InputMapping(
-        Combo.withKeyInputs(Key.UP_ARROW) -> (player.turn(Direction.UP).move(true)),
-        Combo.withKeyInputs(Key.DOWN_ARROW) -> (player.turn(Direction.DOWN).move(true)),
-        Combo.withKeyInputs(Key.LEFT_ARROW) -> (player.turn(Direction.LEFT).move(true)),
-        Combo.withKeyInputs(Key.RIGHT_ARROW) -> (player.turn(Direction.RIGHT).move(true)),
-        Combo.withKeyInputs(Key.SPACE) -> (player.fire(true)),
-        Combo.withKeyInputs(Key.UP_ARROW, Key.SPACE) -> (player.turn(Direction.UP).move(true).fire(true)),
-        Combo.withKeyInputs(Key.DOWN_ARROW, Key.SPACE) -> (player.turn(Direction.DOWN).move(true).fire(true)),
-        Combo.withKeyInputs(Key.LEFT_ARROW, Key.SPACE) -> (player.turn(Direction.LEFT).move(true).fire(true)),
-        Combo.withKeyInputs(Key.RIGHT_ARROW, Key.SPACE) -> (player.turn(Direction.RIGHT).move(true).fire(true)),
+        // Triples
+        Combo.withKeyInputs(Key.UP_ARROW, Key.LEFT_ARROW, Key.SPACE) -> PlayerControlState(Vector2(-1.0, -1.0), true),
+        Combo.withKeyInputs(Key.UP_ARROW, Key.RIGHT_ARROW, Key.SPACE) -> PlayerControlState(Vector2(1.0, 1.0), true),
+
+        Combo.withKeyInputs(Key.DOWN_ARROW, Key.LEFT_ARROW, Key.SPACE) -> PlayerControlState(Vector2(-1.0, 1.0), true),
+        Combo.withKeyInputs(Key.DOWN_ARROW, Key.RIGHT_ARROW, Key.SPACE) -> PlayerControlState(Vector2(1.0, 1.0), true),
+
+        // Doubles
+        Combo.withKeyInputs(Key.UP_ARROW, Key.LEFT_ARROW) -> PlayerControlState(Vector2(-1.0, -1.0)),
+        Combo.withKeyInputs(Key.UP_ARROW, Key.RIGHT_ARROW) -> PlayerControlState(Vector2(1.0, -1.0)),
+
+        Combo.withKeyInputs(Key.DOWN_ARROW, Key.LEFT_ARROW) -> PlayerControlState(Vector2(-1.0, 1.0)),
+        Combo.withKeyInputs(Key.DOWN_ARROW, Key.RIGHT_ARROW) -> PlayerControlState(Vector2(1.0, 1.0)),
+
+        Combo.withKeyInputs(Key.UP_ARROW, Key.DOWN_ARROW) -> PlayerControlState(Vector2(0, 0)),
+        Combo.withKeyInputs(Key.LEFT_ARROW, Key.RIGHT_ARROW) -> PlayerControlState(Vector2(0, 0)),
+
+        Combo.withKeyInputs(Key.UP_ARROW, Key.SPACE) -> PlayerControlState(Vector2(0, -1.0), true),
+        Combo.withKeyInputs(Key.DOWN_ARROW, Key.SPACE) -> PlayerControlState(Vector2(0, 1.0), true),
+        Combo.withKeyInputs(Key.LEFT_ARROW, Key.SPACE) -> PlayerControlState(Vector2(-1.0, 0), true),
+        Combo.withKeyInputs(Key.RIGHT_ARROW, Key.SPACE) -> PlayerControlState(Vector2(1.0, 0), true),
+
+        // Singles
+        Combo.withKeyInputs(Key.UP_ARROW) -> PlayerControlState(Vector2(0, -1.0)),
+        Combo.withKeyInputs(Key.DOWN_ARROW) -> PlayerControlState(Vector2(0, 1.0)),
+        Combo.withKeyInputs(Key.LEFT_ARROW) -> PlayerControlState(Vector2(-1.0, 0)),
+        Combo.withKeyInputs(Key.RIGHT_ARROW) -> PlayerControlState(Vector2(1.0, 0)),
+        Combo.withKeyInputs(Key.SPACE) -> PlayerControlState(firing = true),
       )
     }
-
-    override def controlPlayer(keyboardEvent: KeyboardEvent, gameTime: GameTime, player: PlayerModel): PlayerModel = {
-      keyboardEvent match {
-        case KeyboardEvent.KeyDown(Key.UP_ARROW) => player.turn(Direction.UP).move(true)
-        case KeyboardEvent.KeyDown(Key.DOWN_ARROW) => player.turn(Direction.DOWN).move(true)
-        case KeyboardEvent.KeyDown(Key.LEFT_ARROW) => player.turn(Direction.LEFT).move(true)
-        case KeyboardEvent.KeyDown(Key.RIGHT_ARROW) => player.turn(Direction.RIGHT).move(true)
-        case KeyboardEvent.KeyDown(Key.SPACE) => player.fire(true);
-        case KeyboardEvent.KeyUp(Key.SPACE) => player.fire(false);
-        case KeyboardEvent.KeyUp(Key.UP_ARROW | Key.DOWN_ARROW | Key.LEFT_ARROW | Key.RIGHT_ARROW) => player.move(false)
-        case _ => player
-      }
-    }
+    */
   }
 }
+
+final case class PlayerControlState(direction: Vector2 = Vector2(0, 0), firing: Boolean = false)

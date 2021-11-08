@@ -11,6 +11,10 @@ object GameAssets {
 
   val explosionTexture: AssetName = AssetName("explosion")
 
+  val testVert: AssetName = AssetName("testVert")
+  val testFrag: AssetName = AssetName("testFrag")
+  val blendFrag: AssetName = AssetName("blendFrag")
+
   val explosionAnimationKey1: AnimationKey = AnimationKey("explosion1")
   val explosionAnimationKey2: AnimationKey = AnimationKey("explosion2")
   val explosionAnimationKey3: AnimationKey = AnimationKey("explosion3")
@@ -48,9 +52,21 @@ object GameAssets {
     )
   )
 
+  val testShader: EntityShader.External =
+    EntityShader
+      .External(ShaderId("testShader"))
+      //.withVertexProgram(testVert)
+      .withFragmentProgram(testFrag)
+
+
+  val blendShader: BlendShader.External =
+    BlendShader
+      .External(ShaderId("blendShader"))
+      .withFragmentProgram(blendFrag)
+
   def characterMaterial: Material.ImageEffects = Material.ImageEffects(characterTexture)
   def bulletMaterial: Material.Bitmap = Material.Bitmap(bulletTexture)
-  def enemy1Material: Material.Bitmap = Material.Bitmap(enemy1Texture)
+  def enemy1Material: Material.Bitmap = Material.Bitmap(enemy1Texture)//.withShaderId(ShaderId("testShader"))
   def explosion1Material: Material.Bitmap = Material.Bitmap(explosionTexture)
 
   // Set reference / rotation point at the center
@@ -64,6 +80,9 @@ object GameAssets {
       AssetType.Image(bulletTexture, AssetPath(baseUrl + "assets/bullet1.png")),
       AssetType.Image(enemy1Texture, AssetPath(baseUrl + "assets/enemy2.png")),
       AssetType.Audio(fireSound1, AssetPath(baseUrl + "assets/MiniShot2.wav")),
-      AssetType.Image(explosionTexture, AssetPath(baseUrl + "assets/Explosion.png"))
+      AssetType.Image(explosionTexture, AssetPath(baseUrl + "assets/Explosion.png")),
+      //AssetType.Text(testVert, AssetPath("assets/test.vert")),
+      AssetType.Text(testFrag, AssetPath("assets/test.frag")),
+      AssetType.Text(blendFrag, AssetPath("assets/blend.frag")),
     )
 }

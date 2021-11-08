@@ -4,7 +4,7 @@ import indigo.*
 import indigoextras.geometry.{BoundingBox, Vertex}
 import indigo.IndigoLogger.*
 import com.game.model.player.PlayerStatus
-import com.game.model.GameState
+import com.game.model.{GameState, PlayerControlState}
 import com.game.model.other.Projectile
 import com.game.scenes.level1.Level1GameMap
 
@@ -38,19 +38,15 @@ final case class PlayerModel(
       this.copy(direction = direction)
   }
 
-  def fire(isFiring: Boolean): PlayerModel = {
-    this.copy(status = this.status.copy(isFiring = isFiring))
-  }
+  def getNewLocation(velocity: Vector2): Vertex = Vertex(this.location.x + velocity.x, this.location.y + velocity.y)
 
-  def move(isMoving: Boolean): PlayerModel = {
-    if (this.status.isMoving == isMoving)
-      this
-    else
-      this.copy(status = this.status.copy(isMoving = isMoving))
-  }
-
-  def update(cameraBoundingBox: BoundingBox, gameMap: Level1GameMap, gameTime: GameTime): (PlayerModel, List[GlobalEvent]) = {
-    val (player, hasNewProjectiles) = PlayerModel.update(this, cameraBoundingBox, gameMap, gameTime)
+  def update(
+              cameraBoundingBox: BoundingBox,
+              gameMap: Level1GameMap,
+              gameTime: GameTime,
+              playerControlState: PlayerControlState
+            ): (PlayerModel, List[GlobalEvent]) = {
+    val (player, hasNewProjectiles) = PlayerModel.update(this, cameraBoundingBox, gameMap, gameTime, playerControlState)
 
     if (hasNewProjectiles)
       (player, PlaySound(AssetName("fireSound1"), Volume.Max) :: Nil)
@@ -70,9 +66,15 @@ object PlayerModel {
     )
   }
 
-  def update(player: PlayerModel, cameraBoundingBox: BoundingBox, gameMap: Level1GameMap, gameTime: GameTime): (PlayerModel, Boolean) = {
-    val newPosition = updatePlayerPosition(player, cameraBoundingBox, gameMap)
-    val (lastFired, updatedProjectiles, hasNewProjectiles) = updatePlayerProjectiles(player, cameraBoundingBox, gameTime)
+  def update(
+              player: PlayerModel,
+              cameraBoundingBox: BoundingBox,
+              gameMap: Level1GameMap,
+              gameTime: GameTime,
+              playerControlState: PlayerControlState
+            ): (PlayerModel, Boolean) = {
+    val newPosition = updatePlayerPosition(player, cameraBoundingBox, gameMap, gameTime, playerControlState)
+    val (lastFired, updatedProjectiles, hasNewProjectiles) = updatePlayerProjectiles(player, cameraBoundingBox, gameTime, playerControlState)
     val newStatus = updtateStatus(player.status, gameTime)
     val newPlayer = player.copy(
       location = newPosition,
@@ -83,19 +85,40 @@ object PlayerModel {
     (newPlayer, hasNewProjectiles)
   }
 
-  def updatePlayerPosition(player: PlayerModel, cameraBoundingBox: BoundingBox, gameMap: Level1GameMap): Vertex = {
-    player.status.isMoving match
-      case true => newPlayerPosition(player.location, player.direction, player.status.speed, cameraBoundingBox)
-      case false => player.location
+  def updatePlayerPosition(
+                            player: PlayerModel,
+                            cameraBoundingBox: BoundingBox,
+                            gameMap: Level1GameMap,
+                            gameTime: GameTime,
+                            playerControlState: PlayerControlState
+                          ): Vertex = {
+    val newLocation = Vertex(
+      player.location.x + playerControlState.direction.x * player.status.speed * gameTime.delta.toDouble,
+      player.location.y + playerControlState.direction.y * player.status.speed * gameTime.delta.toDouble
+    )
+
+    val contains = playerControlState.direction match
+      case Vector2(0, 0) => true
+      case Vector2(1.0, 0) => cameraBoundingBox.contains(newLocation.x + player.hitBox.x / 2, newLocation.y)
+      case Vector2(-1.0, 0) => cameraBoundingBox.contains(newLocation.x - player.hitBox.x / 2, newLocation.y)
+      case Vector2(0, 1.0) => cameraBoundingBox.contains(newLocation.x, newLocation.y + player.hitBox.y / 2)
+      case Vector2(0, -1.0) => cameraBoundingBox.contains(newLocation.x, newLocation.y - player.hitBox.y / 2)
+      case Vector2(1.0, 1.0) => cameraBoundingBox.contains(newLocation.x + player.hitBox.x / 2, newLocation.y + player.hitBox.y / 2)
+      case Vector2(-1.0, -1.0) => cameraBoundingBox.contains(newLocation.x - player.hitBox.x / 2, newLocation.y - player.hitBox.y / 2)
+      case Vector2(1.0, -1.0) => cameraBoundingBox.contains(newLocation.x + player.hitBox.x / 2, newLocation.y - player.hitBox.y / 2)
+      case Vector2(-1.0, 1.0) => cameraBoundingBox.contains(newLocation.x - player.hitBox.x / 2, newLocation.y + player.hitBox.y / 2)
+
+    if contains then newLocation else player.location
   }
 
   def updatePlayerProjectiles(
                                player: PlayerModel,
                                cameraBoundingBox: BoundingBox,
-                               gameTime: GameTime
+                               gameTime: GameTime,
+                               playerControlState: PlayerControlState
                              ): (Seconds, List[Projectile], Boolean) = {
     val shiftedProjectiles = newProjectilePostions(player.projectiles, cameraBoundingBox)
-    player.status.isFiring match
+    playerControlState.firing match
       case true => {
         val (lastFired, newProjectiles) = addProjectiles(player, shiftedProjectiles, gameTime)
         (lastFired, newProjectiles, (newProjectiles.length > shiftedProjectiles.length))
@@ -158,33 +181,5 @@ object PlayerModel {
       .map[Projectile](projectile => {
         projectile.copy(location = projectile.location.moveBy(projectile.direction * projectile.speed))
       })
-  }
-
-  def newPlayerPosition(currentPosition: Vertex, currentDirection: Direction, speed: Double, camerBoundingBox: BoundingBox): Vertex = {
-    currentDirection match
-      case Direction.UP => {
-        val nextPosition = currentPosition.moveBy(0, -speed)
-        camerBoundingBox.contains(nextPosition.moveBy(0, -32)) match
-          case true => nextPosition
-          case false => currentPosition
-      }
-      case Direction.DOWN => {
-        val nextPosition = currentPosition.moveBy(0, speed)
-        camerBoundingBox.contains(nextPosition.moveBy(0, 32)) match
-          case true => nextPosition
-          case false => currentPosition
-      }
-      case Direction.LEFT => {
-        val nextPosition = currentPosition.moveBy(-speed, 0)
-        camerBoundingBox.contains(nextPosition.moveBy(-32, 0)) match
-          case true => nextPosition
-          case false => currentPosition
-      }
-      case Direction.RIGHT => {
-        val nextPosition = currentPosition.moveBy(speed, 0)
-        camerBoundingBox.contains(nextPosition.moveBy(32, 0)) match
-          case true => nextPosition
-          case false => currentPosition
-      }
   }
 }

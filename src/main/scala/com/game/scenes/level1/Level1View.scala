@@ -6,6 +6,7 @@ import com.game.scenes.level1.Level1View.gameLayer
 
 import indigo.*
 import indigo.shared.*
+import indigo.shared.materials.BlendMaterial
 import indigo.shared.IndigoLogger.consoleLog
 import indigoextras.geometry.{BoundingBox, Vertex}
 
@@ -30,9 +31,11 @@ object Level1View {
             BindingKey("game"),
             gameLayer(viewConfig, model, viewModel, staticAssets)
           )
+          //.withBlendMaterial(BlendShaderData(ShaderId("blendShader")))
           //).withCamera(Camera.LookAt(model.player.location.toPoint))
           //).withCamera(Camera.Fixed(model.cameraBoundingBox.topLeft.toPoint))
         )
+        //.withBlendMaterial(blendMaterial)
     )
   }
 

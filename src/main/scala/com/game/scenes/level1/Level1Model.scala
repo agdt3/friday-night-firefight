@@ -3,8 +3,7 @@ package com.game.scenes.level1
 import indigo.*
 import indigo.scenes.SceneEvent
 import indigoextras.geometry.{BoundingBox, Vertex}
-
-import com.game.model.{GameControlScheme, GameState}
+import com.game.model.{GameControlScheme, GameState, PlayerControlState}
 import com.game.model.enemy.EnemyModel
 import com.game.model.other.Projectile
 import com.game.model.player.PlayerModel
@@ -20,18 +19,19 @@ final case class Level1Model(
                               enemyProjectiles: List[Projectile] = List(),
                               lastUpdated: Seconds = Seconds.zero,
                             ) {
-  def update(gameTime: GameTime): GlobalEvent => Outcome[Level1Model] = {
+  def update(gameTime: GameTime, inputState: InputState): GlobalEvent => Outcome[Level1Model] = {
     // FrameTick is always the last event, which is why we update the model's lastUpdated
     case FrameTick => {
       Level1Model.update(
         gameTime,
+        inputState,
         this.copy(lastUpdated = gameTime.running),
       )(FrameTick)
     }
 
     // Don't update lastUpdated since this event is being processed in this Frame
     case e => {
-      Level1Model.update(gameTime, this)(e)
+      Level1Model.update(gameTime, inputState, this)(e)
     }
   }
 }
@@ -49,11 +49,15 @@ object Level1Model {
     )
   }
 
-  def update(gameTime: GameTime, state: Level1Model): GlobalEvent => Outcome[Level1Model] = {
+  def update(gameTime: GameTime, inputState: InputState, state: Level1Model): GlobalEvent => Outcome[Level1Model] = {
     case FrameTick => {
+      // Enemeies and projectiles
       val updatedProjectiles = updateProjectilePostions(state.enemyProjectiles, state.cameraBoundingBox)
       val (updatedEnemies, newProjectiles, enemyEvents) = updateEnemies(state.enemies, state.player, state.player.projectiles, gameTime)
-      val (newPlayer, playerEvents) = state.player.update(state.cameraBoundingBox, state.gameMap, gameTime)
+
+      // Player
+      val updatedControlState = inputState.mapInputs(state.controlScheme.inputMapping, PlayerControlState())
+      val (newPlayer, playerEvents) = state.player.update(state.cameraBoundingBox, state.gameMap, gameTime, updatedControlState)
 
       val updatedAndNewEnemyProjectiles = newProjectiles ::: updatedProjectiles
       val (isPlayerHit, damage) = checkPlayerHit(player = newPlayer, projectiles = updatedAndNewEnemyProjectiles)
@@ -71,14 +75,6 @@ object Level1Model {
           playerEvents ::: enemyEvents
         else
           SceneEvent.JumpTo(GameOverScene.name) :: Nil
-      )
-    }
-
-    case event: KeyboardEvent => {
-      Outcome(
-        state.copy(
-          player = state.controlScheme.controlPlayer(event, gameTime, state.player)
-        )
       )
     }
 

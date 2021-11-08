@@ -10,6 +10,7 @@ object StartupData {
       Startup
         .Success(startupData)
         .addAnimations(startupData.staticAssets.explosionAnimationSet.toList)
+        .addShaders(List(startupData.staticAssets.testShader, startupData.staticAssets.blendShader))
     )
     // Outcome(Startup.Success(createStartupData(viewConfig)))
   }
@@ -22,7 +23,9 @@ object StartupData {
         bullet = GameAssets.bullet,
         enemy1 = GameAssets.enemy1,
         explosionMaterial = GameAssets.explosion1Material,
-        explosionAnimationSet = GameAssets.explosionAnimationSet
+        explosionAnimationSet = GameAssets.explosionAnimationSet,
+        testShader = GameAssets.testShader,
+        blendShader = GameAssets.blendShader
       ),
     )
   }
@@ -35,7 +38,9 @@ final case class StaticAssets(
                                bullet: Graphic[Material.Bitmap],
                                enemy1: Graphic[Material.Bitmap],
                                explosionMaterial: Material.Bitmap,
-                               explosionAnimationSet: Set[Animation]
+                               explosionAnimationSet: Set[Animation],
+                               testShader: EntityShader,
+                               blendShader: EntityShader
                              )
 
 final case class ViewConfig(magnificationLevel: Int, viewport: GameViewport)
