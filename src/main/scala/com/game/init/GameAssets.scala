@@ -1,6 +1,22 @@
 package com.game.init
 
-import indigo.*
+import indigo.{
+  NonEmptyList,
+  AssetName,
+  AnimationKey,
+  Animation,
+  Frame,
+  Cycle,
+  Millis,
+  AssetPath,
+  AssetType,
+  Rectangle,
+  Graphic,
+  Material,
+  ShaderId,
+  EntityShader,
+  BlendShader
+}
 import indigo.shared.events.AssetEvent.AssetBatchLoaded
 
 object GameAssets {
@@ -83,6 +99,6 @@ object GameAssets {
       AssetType.Image(explosionTexture, AssetPath(baseUrl + "assets/Explosion.png")),
       //AssetType.Text(testVert, AssetPath("assets/test.vert")),
       AssetType.Text(testFrag, AssetPath("assets/test.frag")),
-      AssetType.Text(blendFrag, AssetPath("assets/blend.frag")),
+      AssetType.Text(blendFrag, AssetPath("assets/scanline_blend.frag")),
     )
 }

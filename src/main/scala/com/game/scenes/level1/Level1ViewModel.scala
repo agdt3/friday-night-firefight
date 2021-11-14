@@ -1,6 +1,6 @@
 package com.game.scenes.level1
 
-import indigo.*
+import indigo.{FrameTick, GlobalEvent, Outcome, GameTime, Point, AnimationKey, Seconds}
 import indigoextras.geometry.Vertex
 
 import com.game.model.player.PlayerViewModel

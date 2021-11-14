@@ -58,40 +58,6 @@ object GameControlScheme {
 
   final case class SchemeB(up: Key, down: Key, left: Key, right: Key, action: Key) extends GameControlScheme {
     override val inputMapping: InputMapping[PlayerControlState] = generateInputMapping(up, down, left, right, action)
-    /*
-    override val inputMapping: InputMapping[PlayerControlState] = {
-      InputMapping(
-        // Triples
-        Combo.withKeyInputs(Key.UP_ARROW, Key.LEFT_ARROW, Key.SPACE) -> PlayerControlState(Vector2(-1.0, -1.0), true),
-        Combo.withKeyInputs(Key.UP_ARROW, Key.RIGHT_ARROW, Key.SPACE) -> PlayerControlState(Vector2(1.0, 1.0), true),
-
-        Combo.withKeyInputs(Key.DOWN_ARROW, Key.LEFT_ARROW, Key.SPACE) -> PlayerControlState(Vector2(-1.0, 1.0), true),
-        Combo.withKeyInputs(Key.DOWN_ARROW, Key.RIGHT_ARROW, Key.SPACE) -> PlayerControlState(Vector2(1.0, 1.0), true),
-
-        // Doubles
-        Combo.withKeyInputs(Key.UP_ARROW, Key.LEFT_ARROW) -> PlayerControlState(Vector2(-1.0, -1.0)),
-        Combo.withKeyInputs(Key.UP_ARROW, Key.RIGHT_ARROW) -> PlayerControlState(Vector2(1.0, -1.0)),
-
-        Combo.withKeyInputs(Key.DOWN_ARROW, Key.LEFT_ARROW) -> PlayerControlState(Vector2(-1.0, 1.0)),
-        Combo.withKeyInputs(Key.DOWN_ARROW, Key.RIGHT_ARROW) -> PlayerControlState(Vector2(1.0, 1.0)),
-
-        Combo.withKeyInputs(Key.UP_ARROW, Key.DOWN_ARROW) -> PlayerControlState(Vector2(0, 0)),
-        Combo.withKeyInputs(Key.LEFT_ARROW, Key.RIGHT_ARROW) -> PlayerControlState(Vector2(0, 0)),
-
-        Combo.withKeyInputs(Key.UP_ARROW, Key.SPACE) -> PlayerControlState(Vector2(0, -1.0), true),
-        Combo.withKeyInputs(Key.DOWN_ARROW, Key.SPACE) -> PlayerControlState(Vector2(0, 1.0), true),
-        Combo.withKeyInputs(Key.LEFT_ARROW, Key.SPACE) -> PlayerControlState(Vector2(-1.0, 0), true),
-        Combo.withKeyInputs(Key.RIGHT_ARROW, Key.SPACE) -> PlayerControlState(Vector2(1.0, 0), true),
-
-        // Singles
-        Combo.withKeyInputs(Key.UP_ARROW) -> PlayerControlState(Vector2(0, -1.0)),
-        Combo.withKeyInputs(Key.DOWN_ARROW) -> PlayerControlState(Vector2(0, 1.0)),
-        Combo.withKeyInputs(Key.LEFT_ARROW) -> PlayerControlState(Vector2(-1.0, 0)),
-        Combo.withKeyInputs(Key.RIGHT_ARROW) -> PlayerControlState(Vector2(1.0, 0)),
-        Combo.withKeyInputs(Key.SPACE) -> PlayerControlState(firing = true),
-      )
-    }
-    */
   }
 }
 

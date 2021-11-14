@@ -31,11 +31,8 @@ object Level1View {
             BindingKey("game"),
             gameLayer(viewConfig, model, viewModel, staticAssets)
           )
-          //.withBlendMaterial(BlendShaderData(ShaderId("blendShader")))
-          //).withCamera(Camera.LookAt(model.player.location.toPoint))
-          //).withCamera(Camera.Fixed(model.cameraBoundingBox.topLeft.toPoint))
         )
-        //.withBlendMaterial(blendMaterial)
+        .withBlendMaterial(BlendShaderData(ShaderId("blendShader")))
     )
   }
 

@@ -4,7 +4,7 @@ lazy val mygame =
     .settings( // Standard SBT settings
       name := "friday-night-firefight",
       version := "0.0.1",
-      scalaVersion := "3.0.2",
+      scalaVersion := "3.1.0",
       organization := "org.mygame"
     )
     .settings( // Indigo specific settings
@@ -14,9 +14,9 @@ lazy val mygame =
       windowStartWidth := 720, // Width of Electron window, used with `indigoRun`.
       windowStartHeight := 480, // Height of Electron window, used with `indigoRun`.
       libraryDependencies ++= Seq(
-        "io.indigoengine" %%% "indigo" % "0.9.2",
-        "io.indigoengine" %%% "indigo-extras" % "0.9.2",
-        "io.indigoengine" %%% "indigo-json-circe" % "0.9.2",
+        "io.indigoengine" %%% "indigo" % "0.10.0",
+        "io.indigoengine" %%% "indigo-extras" % "0.10.0",
+        "io.indigoengine" %%% "indigo-json-circe" % "0.10.0",
       )
     )
 
