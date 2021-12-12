@@ -22,7 +22,7 @@ object Level1GameMap {
     val obstacles = List(
       Debris(Vertex(30, 150))
     )
-    // Witdth and Height measured in number of 64 x 64 tiles
+    // Width and Height measured in number of 64 x 64 tiles
     Level1GameMap(12, 144, 64, List(), obstacles, pickups)
   }
 }

@@ -52,7 +52,7 @@ object Main extends IndigoGame[ViewConfig, StartupData, Model, ViewModel] {
     Outcome(ViewModel.initial(startupData, model))
 
   def setup(viewConfig: ViewConfig, assetCollection: AssetCollection, dice: Dice): Outcome[Startup[StartupData]] =
-    StartupData.initialize(viewConfig)
+    StartupData.initialize(viewConfig, assetCollection)
 
   def updateModel(context: FrameContext[StartupData], model: Model): GlobalEvent => Outcome[Model] = {
     case GameReset =>

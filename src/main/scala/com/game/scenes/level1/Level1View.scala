@@ -6,20 +6,21 @@ import com.game.scenes.level1.Level1View.gameLayer
 
 import indigo.*
 import indigo.shared.*
+import indigo.shared.formats.TileSet
 import indigo.shared.materials.BlendMaterial
 import indigo.shared.IndigoLogger.consoleLog
 import indigoextras.geometry.{BoundingBox, Vertex}
+import indigo.Camera
 
 object Level1View {
   def update(
-              viewConfig: ViewConfig,
-              model: Level1Model,
-              viewModel: Level1ViewModel,
-              staticAssets: StaticAssets
-            ): Outcome[SceneUpdateFragment] = {
+      viewConfig: ViewConfig,
+      model: Level1Model,
+      viewModel: Level1ViewModel,
+      staticAssets: StaticAssets
+  ): Outcome[SceneUpdateFragment] = {
     Outcome(
-      SceneUpdateFragment
-        .empty
+      SceneUpdateFragment.empty
         .addLayer(
           Layer(
             BindingKey("ui"),
@@ -33,35 +34,74 @@ object Level1View {
           )
         )
         .withBlendMaterial(BlendShaderData(ShaderId("blendShader")))
+        .withCamera(Camera.LookAt(model.player.location.toPoint))
     )
   }
 
-  def gameLayer(config: ViewConfig, model: Level1Model, viewModel: Level1ViewModel, staticAssets: StaticAssets): List[SceneNode] = {
-    drawCharacter(config, model, staticAssets.character) ::
+  def gameLayer(
+      config: ViewConfig,
+      model: Level1Model,
+      viewModel: Level1ViewModel,
+      staticAssets: StaticAssets
+  ): List[SceneNode] = {
+    drawMap(config, model, staticAssets.tiledMap) ::
+      drawCharacter(config, model, staticAssets.character) ::
       drawEnemies(config, model, staticAssets.enemy1) :::
       drawBullets(config, model, staticAssets.bullet) :::
       drawEnemyBullets(config, model, staticAssets.bullet)
       ::: drawExplosions(config, viewModel, staticAssets.explosionMaterial)
-      // ::: _drawBoundingBoxes(config, model)
+    // ::: _drawBoundingBoxes(config, model)
   }
 
-  def drawCharacter(config: ViewConfig, model: Level1Model, characterAsset: Graphic[Material.ImageEffects]): Graphic[_] = {
-    // val radians = getAngleDifference(model.player.direction)
-    // characterAsset.rotateBy(radians).moveTo(model.player.location.toPoint)
+  def drawMap(
+      config: ViewConfig,
+      model: Level1Model,
+      tiledMap: Group
+  ): Group = {
+    tiledMap.rotateBy(Radians.TAU)
 
+    // val x = tiledMap.children.head.asInstanceOf[Group].children.head.withDepth(Depth.Zero)
+    // consoleLog(x.toString)
+    // List(x)
+    /*
+    (tiledMap.children.head.asInstanceOf[Group]).children.filter(node => {
+      node.ref.y < 768.0
+    }).map(node => {
+      node.withDepth(Depth.Zero)
+    })
+     */
+  }
+
+  def drawCharacter(
+      config: ViewConfig,
+      model: Level1Model,
+      characterAsset: Graphic[Material.ImageEffects]
+  ): Graphic[_] = {
     characterAsset
       .moveTo(model.player.location.toPoint)
       .modifyMaterial(material => {
-        if (model.player.status.isInvincibleFor > Seconds(0)) then material.withAlpha(0.5) else material
+        if model.player.status.isInvincibleFor > Seconds(0) then
+          material.withAlpha(0.5)
+        else material
       })
   }
 
-  def drawBullets(config: ViewConfig, model: Level1Model, bulletAsset: Graphic[_]): List[Graphic[_]] = {
-    model.player.projectiles map { projectile => bulletAsset.moveTo(projectile.location.toPoint) }
+  def drawBullets(
+      config: ViewConfig,
+      model: Level1Model,
+      bulletAsset: Graphic[_]
+  ): List[Graphic[_]] = {
+    model.player.projectiles map { projectile =>
+      bulletAsset.moveTo(projectile.location.toPoint)
+    }
   }
 
-  def drawEnemies(config: ViewConfig, model: Level1Model, enemyAsset: Graphic[_]): List[Graphic[_]] = {
-    //model.enemies.map {enemy => enemyAsset.moveTo(enemy.location.toPoint)}
+  def drawEnemies(
+      config: ViewConfig,
+      model: Level1Model,
+      enemyAsset: Graphic[_]
+  ): List[Graphic[_]] = {
+    // model.enemies.map {enemy => enemyAsset.moveTo(enemy.location.toPoint)}
     model.enemies.map(enemy => {
       // val angle = getAngleDifference(enemy.direction, Vertex(0, 1f))
       // enemyAsset.moveTo(enemy.location.toPoint).rotateBy(angle)}
@@ -69,18 +109,28 @@ object Level1View {
     })
   }
 
-  def drawEnemyBullets(config: ViewConfig, model: Level1Model, bulletAsset: Graphic[_]): List[Graphic[_]] = {
-    model.enemyProjectiles map { projectile => bulletAsset.moveTo(projectile.location.toPoint) }
+  def drawEnemyBullets(
+      config: ViewConfig,
+      model: Level1Model,
+      bulletAsset: Graphic[_]
+  ): List[Graphic[_]] = {
+    model.enemyProjectiles map { projectile =>
+      bulletAsset.moveTo(projectile.location.toPoint)
+    }
   }
 
-  def drawExplosions(config: ViewConfig, viewModel: Level1ViewModel, explosionMaterial: Material): List[Sprite[_]] = {
+  def drawExplosions(
+      config: ViewConfig,
+      viewModel: Level1ViewModel,
+      explosionMaterial: Material
+  ): List[Sprite[_]] = {
     viewModel.explosions map { explosion =>
       val offset = explosion.location - Point(32, 32)
       Sprite(
         BindingKey("explosion animation"),
         offset.x,
         offset.y,
-        1,
+        0,
         explosion.animationKey,
         explosionMaterial
       ).play()
@@ -89,9 +139,9 @@ object Level1View {
 
   def getAngleDifference(newDirection: Direction): Radians = {
     newDirection match
-      case Direction.UP => Radians(0)
-      case Direction.DOWN => Radians.PI
-      case Direction.LEFT => Radians.fromDegrees(-90)
+      case Direction.UP    => Radians(0)
+      case Direction.DOWN  => Radians.PI
+      case Direction.LEFT  => Radians.fromDegrees(-90)
       case Direction.RIGHT => Radians.fromDegrees(90)
   }
 
@@ -107,13 +157,16 @@ object Level1View {
 
   def drawHealthBar(config: ViewConfig, model: Level1Model): List[SceneNode] = {
     val currentHealth = model.player.status.health
-    val totalHealth = model.player.status.totalHealth
-    val healthBar = (0 until totalHealth).map { index => drawHealthBox(index, currentHealth) }
+    val totalHealth   = model.player.status.totalHealth
+    val healthBar = (0 until totalHealth).map { index =>
+      drawHealthBox(index, currentHealth)
+    }
     healthBar.toList
   }
 
   def drawHealthBox(index: Int, currentHealth: Int): SceneNode = {
-    val fillColor = if (currentHealth >= index + 1) then RGBA.White else RGBA.Zero
+    val fillColor =
+      if (currentHealth >= index + 1) then RGBA.White else RGBA.Zero
     val offset = 15
     Shape.Box(
       Rectangle(Point(17 * index + offset, offset), Size(10, 20)),
@@ -122,7 +175,10 @@ object Level1View {
     )
   }
 
-  private def _drawBoundingBoxes(config: ViewConfig, model: Level1Model): List[SceneNode] = {
+  private def _drawBoundingBoxes(
+      config: ViewConfig,
+      model: Level1Model
+  ): List[SceneNode] = {
     val enemyBoxes = model.enemies.flatMap(enemy => {
       _drawBoundingBox(enemy.getHitBoundingBox(), RGBA.Green)
     })
@@ -132,7 +188,10 @@ object Level1View {
       ::: enemyBoxes
   }
 
-  private def _drawBoundingBox(box: BoundingBox, color: RGBA): List[Shape.Line] = {
+  private def _drawBoundingBox(
+      box: BoundingBox,
+      color: RGBA
+  ): List[Shape.Line] = {
     List(
       Shape.Line(
         box.topLeft.toPoint,
@@ -153,7 +212,7 @@ object Level1View {
         box.bottomLeft.toPoint,
         box.topLeft.toPoint,
         Stroke(2, color)
-      ),
+      )
     )
   }
 }
